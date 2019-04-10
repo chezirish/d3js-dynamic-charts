@@ -347,6 +347,11 @@ function d3Chart (param, data, chartIndexSelected){
     var yAxisLeft = d3.axisLeft(yScaleLeft);
     //var yAxisRight = d3.axisRight(yScaleRight); // правая ось y отключена
 
+    d3.select(param.parentSelector)
+        .style('width', param.width + 'px')
+        .style('position', 'relative');
+
+
     // create svg for chart drawing
     var svg = selectedObj.append("svg")
         .attr("width", param.width)
@@ -537,6 +542,9 @@ function d3Chart (param, data, chartIndexSelected){
 
         .on('mouseover', function (d, i) {
 
+            var tooltipHeight = parseInt(tooltip.style('height').replace('px'));
+            var rect = this.getBoundingClientRect();
+
             var xtranslate = x(new Date(d[xColumnName]));
             var chartId    = getChartId(chart);
 
@@ -546,11 +554,12 @@ function d3Chart (param, data, chartIndexSelected){
                 .style('opacity', 1)
                 .style('stroke', param.series[chartIndexSelected]['color']); // цвет границы кружка = цвету графика
 
+                var tooltipWidth = parseInt(tooltip.style('width'));
+            var tooltipHeight = parseInt(tooltip.style('height'));
+
             tooltip.style('opacity', 1)
-                .style('left', function () {
-                    return x(new Date(d[xColumnName])) - 2 / 2 + margin.left + 49 + 'px';
-                })
-                .style('top', y(d[yColumnName])  + d3.event.pageY - margin.top*2 - 36 +'px')
+                .style('left', parseInt(d3.select(currentDot).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
+                .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
                 .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
 
                 .html("<br>"+(d[yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
@@ -738,6 +747,10 @@ function d3Chart (param, data, chartIndexSelected){
     var yAxisLeft = d3.axisLeft(yScaleLeft);
     //var yAxisRight = d3.axisRight(yScaleRight); // правая ось y отключена
 
+    d3.select(param.parentSelector)
+        .style('width', param.width + 'px')
+        .style('position', 'relative');
+
     // create svg for chart drawing
     var svg = selectedObj.append("svg")
         .attr("width", param.width)
@@ -928,6 +941,9 @@ function d3Chart (param, data, chartIndexSelected){
 
         .on('mouseover', function (d, i) {
 
+            var tooltipHeight = parseInt(tooltip.style('height').replace('px'));
+            var rect = this.getBoundingClientRect();
+
             var xtranslate = x(new Date(d[xColumnName]));
             var chartId    = getChartId(chart);
 
@@ -937,11 +953,13 @@ function d3Chart (param, data, chartIndexSelected){
                 .style('opacity', 1)
                 .style('stroke', param.series[chartIndexSelected]['color']); // цвет границы кружка = цвету графика
 
+
+                var tooltipWidth = parseInt(tooltip.style('width'));
+            var tooltipHeight = parseInt(tooltip.style('height'));
+
             tooltip.style('opacity', 1)
-                .style('left', function () {
-                    return x(new Date(d[xColumnName])) - 2 / 2 + margin.left + 49 + 'px';
-                })
-                .style('top', y(d[yColumnName])  + d3.event.pageY - margin.top*2 - 36 +'px')
+            .style('left', parseInt(d3.select(currentDot).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
+                .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
                 .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
 
                 .html("<br>"+(d[yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
@@ -1129,6 +1147,10 @@ function d3Chart (param, data, chartIndexSelected){
     var yAxisLeft = d3.axisLeft(yScaleLeft);
     //var yAxisRight = d3.axisRight(yScaleRight); // правая ось y отключена
 
+    d3.select(param.parentSelector)
+        .style('width', param.width + 'px')
+        .style('position', 'relative');
+
     // create svg for chart drawing
     var svg = selectedObj.append("svg")
         .attr("width", param.width)
@@ -1321,18 +1343,20 @@ function d3Chart (param, data, chartIndexSelected){
 
             var xtranslate = x(new Date(d[xColumnName]));
             var chartId    = getChartId(chart);
-
+            var tooltipHeight = parseInt(tooltip.style('height').replace('px'));
+            var rect = this.getBoundingClientRect();
             // hover - круг/точка
             var currentDot = '#chart'+chartId+' #dot-' + i;
             d3.select(currentDot)
                 .style('opacity', 1)
                 .style('stroke', param.series[chartIndexSelected]['color']); // цвет границы кружка = цвету графика
 
+                var tooltipWidth = parseInt(tooltip.style('width'));
+            var tooltipHeight = parseInt(tooltip.style('height'));
+
             tooltip.style('opacity', 1)
-                .style('left', function () {
-                    return x(new Date(d[xColumnName])) - 2 / 2 + margin.left + 49 + 'px';
-                })
-                .style('top', y(d[yColumnName])  + d3.event.pageY - margin.top*2 - 36 +'px')
+            .style('left', parseInt(d3.select(currentDot).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
+                .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
                 .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
 
                 .html("<br>"+(d[yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)

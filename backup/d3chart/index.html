@@ -34,7 +34,7 @@
 </TABLE>
 
 <script>
-    d3.tsv("real_first.tsv", function(error, data) {
+    d3.tsv("real.tsv", function(error, data) {
         if (error) throw error;
 
         // перевод данных в числовой формат и дату для корректного построения
@@ -65,11 +65,7 @@
                     titleShort: "Ключевых"}
             ]
         };
-    //     data = [
-    //      {date: new Date(2000)},
-    //      colums: ["category", "date", "urlsCount", "keysCount"]
-    // ];
-    // console.log(data);
+
         d3Chart(param, data, 0);
     });
 </script>

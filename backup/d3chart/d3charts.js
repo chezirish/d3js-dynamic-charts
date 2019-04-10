@@ -85,18 +85,6 @@ function d3Chart (param, data, chartIndexSelected){
     var yAxisLeft = d3.axisLeft(yScaleLeft);
     //var yAxisRight = d3.axisRight(yScaleRight); // правая ось y отключена
 
-    // var chartWrapper = selectedObj.append("div")
-    //     .style('position', 'relative')
-    //     .attr("width", param.width)
-    //     .attr("height", param.height)
-    //     .attr("id", param.parentSelector.substr(1)+"-wrapper");
-
-
-    d3.select(param.parentSelector)
-        .style('width', param.width + 'px')
-        .style('position', 'relative');
-
-
     // create svg for chart drawing
     var svg = selectedObj.append("svg")
         .attr("width", param.width)
@@ -113,10 +101,9 @@ function d3Chart (param, data, chartIndexSelected){
     /////////////////////////////////////////
     // create group in svg for generate graph
     var g = svg.append("g")
-        .attr("transform", "translate(" + margin.left +  "," + margin.top + ")")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
         //.attr("class", "legend");
         .attr('class', 'line-chart');
-
 
     /////////////////////////////////////////
     // add title and axis names
@@ -259,7 +246,6 @@ function d3Chart (param, data, chartIndexSelected){
     var barWidth            = chartWidth / data.length; //- ширина столбца для ховера - в зависимости от плотности данных
     var initialTooltipWidth = 80;
 
-    
     // rects for hover reference
     chart.selectAll('rect.hover-line')
         .data(data)
@@ -270,7 +256,7 @@ function d3Chart (param, data, chartIndexSelected){
         .attr('class', 'line-chart hover-line')
         .attr('id', function (d, i) {return 'line-' + i;})
         .attr('height', function (d) {return chartHeight - y(d[yColumnName]) - margin.top - margin.bottom;})
-        .attr('x', function (d, i) { 
+        .attr('x', function (d, i) {
             return x(new Date(d[xColumnName])) - 2 / 2;})
 
         .attr('y', function (d, i) {
@@ -298,18 +284,17 @@ function d3Chart (param, data, chartIndexSelected){
                 .style('opacity', 1)
                 .style('stroke', param.series[chartIndexSelected]['color']); // цвет границы кружка = цвету графика
 
-            var tooltipWidth = parseInt(tooltip.style('width'));
-            var tooltipHeight = parseInt(tooltip.style('height'));
-
             tooltip
                 .style('opacity', 1)
-                .style('left', parseInt(d3.select(currentDot).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
-                .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
+                .style('left', function () {
+                    return x(new Date(d[xColumnName])) - 2 / 2 + margin.left + 49 + 'px';
+                })
+                .style('top', y(d[yColumnName])  + d3.event.pageY - margin.top*2 - 36 +'px')
                 .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
 
                 .html("<br>"+(d[yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
                 .style('border-color', "#bbbbbb");
-         
+
             // hover - линии
             var currentLine = '#chart'+chartId+' #line-' + i;
             d3.select(currentLine)
