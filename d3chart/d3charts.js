@@ -166,22 +166,7 @@ function d3Chart (param, data, chartIndexSelected){
         .attr("class", "y axis")
         .call(yAxisLeft)
 
-    ////////////////////////////////////////////////////////////////
-    // прорисовка графика
-    for (var j = 0, len1 = param.series.length; j < len1; j += 1) {
-        // init line for axis
-        var line = d3.line()
-            .x(function(data) { return xScale(data[param.xColumn]); })
-            .y(function(data) { return (param.series[j].yAxis == "left") ? yScaleLeft(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
 
-        // draw line
-        g.append("path").datum(data)
-            .attr("d", line)
-            .style("fill", "none")
-            .style("stroke", param.series[j].color)
-            .style("stroke-width", "1px");
-    };
-    console.log(d3.select('.line-chart > path').style('bottom'))
 
     // add legend for series
     var legend = svg.append("g")
@@ -214,39 +199,11 @@ function d3Chart (param, data, chartIndexSelected){
         .style("cursor", "pointer") // покажем, что элементы легенды кликабельны
 
         // переключаем активные ховеры на выбранный график (перерисовка с учетом индекса chartIndexSelected)
-        .on ('click', function (d, i) {
-            console.log(param.series[ySelectedIndex])
-            
+        .on ('click', function (d, i) {     
             if (i != chartIndexSelected) {
                 d3Chart(param, data, i)
             }
         });
-
-        svg.selectAll('path').on('mousemove', function (d, i, c) {
-            // i != chartIndexSelected
-
-            if(param.series[ySelectedIndex]['yColumn'] === undefined){
-                return;
-            }
-
-            // param.series[ySelectedIndex]['yColumn'] = 'keysCount';
-            console.log( i );
-            if (i === 3) {
-                d3Chart(param, data, 1);
-            }
-            if (i === 2) {
-                d3Chart(param, data, 0);
-            }
-    
-    console.log("d: ", d);
-    console.log("i: ", i);
-    console.log("c: ", c);
-    console.log("c.target: ", c.target);
-    console.log(d3.mouse(this));
-    console.log(d3.select(this));
-    
-    });
-
 
     legend.select('#legend-text-'+chartIndexSelected)
     // подчеркивание на том объекте, который активен для ховера
@@ -344,7 +301,7 @@ function d3Chart (param, data, chartIndexSelected){
                 .style('opacity', 1)
                 .style('left', parseInt(d3.select(currentDot).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
                 .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
-                .style('min-width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
+                .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
 
                 .html("<br>"+(d[yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
                 .style('border-color', "#bbbbbb");
@@ -394,6 +351,37 @@ function d3Chart (param, data, chartIndexSelected){
                 .duration(200)
                 .style('opacity', '0');
         });
+
+
+    ////////////////////////////////////////////////////////////////
+    // прорисовка графика
+    for (var j = 0, len1 = param.series.length; j < len1; j += 1) {
+        // init line for axis
+        var line = d3.line()
+            .x(function(data) { return xScale(data[param.xColumn]); })
+            .y(function(data) { return (param.series[j].yAxis == "left") ? yScaleLeft(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
+
+        // draw line
+        g.append("path").datum(data)
+            .attr("d", line)
+            .attr("class", "line-graph")
+            .style("fill", "none")
+            .style("stroke", param.series[j].color)
+            .style("stroke-width", "1px");
+    };
+
+
+    svg.selectAll('.line-graph').on('mousemove', function (d, i, c) {
+
+        // if(param.series[ySelectedIndex]['yColumn'] === undefined){
+        //     return;
+        // }
+
+        if(i != chartIndexSelected) {
+            d3Chart(param, data, i);
+        }
+
+    });
 
 };
 

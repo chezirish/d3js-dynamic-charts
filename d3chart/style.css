@@ -11,7 +11,7 @@
 .line-chart.tooltip {
     position: absolute;
     text-align: center;
-    height: 45px;
+    min-height: 45px;
     padding: 0;
     font-size: 14px;
     background: white;
