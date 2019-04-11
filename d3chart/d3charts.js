@@ -16,6 +16,7 @@ function d3Chart (param, data, chartIndexSelected){
 
     //remove previous chart
     d3.select(param.parentSelector+"_d3_chart").remove();
+    d3.select('.line-chart.tooltip').remove();
 
     var buildCategory = true;
     if (param.categories === undefined) {
@@ -35,7 +36,7 @@ function d3Chart (param, data, chartIndexSelected){
     var yScaleRight = d3.scaleLinear().range([height, 0]);
 
     // definition of data range for conversion coord at scales
-    var xMin=d3.min(data, function(d) {
+    var xMin=d3.min(data, function(d) {     
             return d[param.xColumn];
         }), xMax=d3.max(data, function(d) {
             return d[param.xColumn];
@@ -52,7 +53,18 @@ function d3Chart (param, data, chartIndexSelected){
         };
     };
 
-    xScale.domain([xMin,xMax]);
+    // если дата одна, то смещаем ее по центру оси X
+    var dateMinOffset = new Date(xMin);
+    dateMinOffset.setDate( dateMinOffset.getDate() - 1  );
+    var dateMaxOffset = new Date(xMax);
+    dateMaxOffset.setDate( dateMaxOffset.getDate() + 1  );
+
+    if(data.length === 1 && param.xColumnDate){
+        xScale.domain([dateMinOffset,dateMaxOffset]);
+    } else {
+        xScale.domain([xMin,xMax]);
+    }
+    
     yScaleLeft.domain([0,yLeftMax]);
     yScaleRight.domain([0,yRightMax]);
 
@@ -169,7 +181,7 @@ function d3Chart (param, data, chartIndexSelected){
             .style("stroke", param.series[j].color)
             .style("stroke-width", "1px");
     };
-
+    console.log(d3.select('.line-chart > path').style('bottom'))
 
     // add legend for series
     var legend = svg.append("g")
@@ -203,10 +215,37 @@ function d3Chart (param, data, chartIndexSelected){
 
         // переключаем активные ховеры на выбранный график (перерисовка с учетом индекса chartIndexSelected)
         .on ('click', function (d, i) {
+            console.log(param.series[ySelectedIndex])
+            
             if (i != chartIndexSelected) {
                 d3Chart(param, data, i)
             }
         });
+
+        svg.selectAll('path').on('mousemove', function (d, i, c) {
+            // i != chartIndexSelected
+
+            if(param.series[ySelectedIndex]['yColumn'] === undefined){
+                return;
+            }
+
+            // param.series[ySelectedIndex]['yColumn'] = 'keysCount';
+            console.log( i );
+            if (i === 3) {
+                d3Chart(param, data, 1);
+            }
+            if (i === 2) {
+                d3Chart(param, data, 0);
+            }
+    
+    console.log("d: ", d);
+    console.log("i: ", i);
+    console.log("c: ", c);
+    console.log("c.target: ", c.target);
+    console.log(d3.mouse(this));
+    console.log(d3.select(this));
+    
+    });
 
 
     legend.select('#legend-text-'+chartIndexSelected)
@@ -305,7 +344,7 @@ function d3Chart (param, data, chartIndexSelected){
                 .style('opacity', 1)
                 .style('left', parseInt(d3.select(currentDot).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
                 .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
-                .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
+                .style('min-width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
 
                 .html("<br>"+(d[yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
                 .style('border-color', "#bbbbbb");
@@ -355,6 +394,7 @@ function d3Chart (param, data, chartIndexSelected){
                 .duration(200)
                 .style('opacity', '0');
         });
+
 };
 
 // parse date and numeric data
