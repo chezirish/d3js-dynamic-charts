@@ -52,6 +52,7 @@
             yLeftAxisName: "Количество",  // надпись на оси Y
             series: [
                 {
+                    // dashRange: 
                     yColumn: "urlsCount", /// !! имя столбца в массиве данных (для линии1 по оси Y)
                     title: "Url-адресов", // заголовок для легенды
                     color: "#ff6600",     // цвет линии1
@@ -65,11 +66,7 @@
                     titleShort: "Ключевых"}
             ]
         };
-    //     data = [
-    //      {date: new Date(2000)},
-    //      colums: ["category", "date", "urlsCount", "keysCount"]
-    // ];
-    // console.log(data);
+
         d3Chart(param, data, 0);
     });
 </script>

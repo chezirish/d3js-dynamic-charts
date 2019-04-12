@@ -3,6 +3,9 @@
 //////////////////////////////////////////////////////////
 function d3Chart (param, data, chartIndexSelected){
 
+    console.log(param.xColumnDate);
+
+
     // проверка parentSelector
     var selectedObj = null;
     if (param.parentSelector === null || param.parentSelector === undefined) {
@@ -31,8 +34,8 @@ function d3Chart (param, data, chartIndexSelected){
         height = param.height - margin.top - margin.bottom;
 
     // set the scale for the transfer of real values
-    var xScale = (param.xColumnDate) ? d3.scaleTime().range([0, width]) : d3.scaleLinear().range([0, width]);
-    var yScaleLeft = d3.scaleLinear().range([height, 0]);
+    var x = (param.xColumnDate) ? d3.scaleTime().range([0, width]) : d3.scaleLinear().range([0, width]);
+    var y = d3.scaleLinear().range([height, 0]);
     var yScaleRight = d3.scaleLinear().range([height, 0]);
 
     // definition of data range for conversion coord at scales
@@ -60,18 +63,18 @@ function d3Chart (param, data, chartIndexSelected){
     dateMaxOffset.setDate( dateMaxOffset.getDate() + 1  );
 
     if(data.length === 1 && param.xColumnDate){
-        xScale.domain([dateMinOffset,dateMaxOffset]);
+        x.domain([dateMinOffset,dateMaxOffset]);
     } else {
-        xScale.domain([xMin,xMax]);
+        x.domain([xMin,xMax]);
     }
     
-    yScaleLeft.domain([0,yLeftMax]);
+    y.domain([0,yLeftMax]);
     yScaleRight.domain([0,yRightMax]);
 
 
     // set axis
     if (param.xColumnDate) {
-        var xAxis = d3.axisBottom(xScale)
+        var xAxis = d3.axisBottom(x)
             .ticks(5)
             .tickFormat(d3.timeFormat("%m.%Y"))
             .tickSize(10);
@@ -80,7 +83,7 @@ function d3Chart (param, data, chartIndexSelected){
         if (xqViewMonth<1) {xqViewMonth=1};
 
         var monthNameFormat = d3.timeFormat("%m");
-        /*var xAxis2 = d3.axisBottom(xScale)
+        /*var xAxis2 = d3.axisBottom(x)
          .ticks(d3.timeMonth,xqViewMonth).tickFormat(function(d) {
          var a = monthNameFormat(d);
          if (a == "01") {
@@ -90,11 +93,11 @@ function d3Chart (param, data, chartIndexSelected){
          })
          .tickSize(2);*/
     } else {
-        var xAxis = d3.axisBottom(xScale);
+        var xAxis = d3.axisBottom(x);
         if (width<300) xAxis.ticks(5);
     };
 
-    var yAxisLeft = d3.axisLeft(yScaleLeft);
+    var yAxisLeft = d3.axisLeft(y);
     //var yAxisRight = d3.axisRight(yScaleRight); // правая ось y отключена
 
     // var chartWrapper = selectedObj.append("div")
@@ -222,9 +225,6 @@ function d3Chart (param, data, chartIndexSelected){
         .attr('class', 'line-chart tooltip')
         .style('opacity', 0);
 
-    var x = xScale;
-    var y = yScaleLeft;
-
     ////////////////////////
     var xColumnName = param.xColumn;                // имя колонки в массиве данных (по оси Х)
     var yColumnName = param.series[ySelectedIndex]['yColumn'];   // по оси Y
@@ -236,26 +236,29 @@ function d3Chart (param, data, chartIndexSelected){
         return parentId.substr(5).replace("_d3_chart","");
     }
 
-    // hover dot
-    chart.selectAll('circle')
-        .data(data)
-        .enter()
-        .append('circle')
-        .attr('id', function (d, i) {return 'dot-' + i;})
-        .attr('cx', function (d, i) {
-            return x(new Date(d[xColumnName]));})
-
-        .attr('cy', function (d, i) {
-            return y(d[yColumnName]);})
-
-        .attr('r', 4)
-        .style('fill', '#bbbbbb') // делать невидимыми точки нужно только если плотность данных высокая
-        .style('opacity', 1);
-
     var barWidth            = chartWidth / data.length; //- ширина столбца для ховера - в зависимости от плотности данных
     var initialTooltipWidth = 80;
 
     
+    ////////////////////////////////////////////////////////////////
+    // прорисовка штриховок графика
+    for (var j = 0, len1 = param.series.length; j < len1; j += 1) {
+
+        // define the area
+        var area = d3.area()
+            .x(function(data) { return x(data[param.xColumn]); })
+            .y0(height)
+            .y1(function(data) { return (param.series[j].yAxis == "left") ? y(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
+      
+        // add the area
+        g.append("path")
+            .datum(data)
+            .attr("class", "area")
+            .attr("d", area)
+            .style("fill", 'lightsteelblue')
+            .style("stroke-width", "0");
+    };
+
     // rects for hover reference
     chart.selectAll('rect.hover-line')
         .data(data)
@@ -272,94 +275,28 @@ function d3Chart (param, data, chartIndexSelected){
         .attr('y', function (d, i) {
             return y(d[yColumnName]) + 4;}); // add height of dot to prevent overlap
 
+
+    // прорисовка hover-box графика
     chart.selectAll('rect.hover-box')
-        .data(data)
-        .enter()
-        .append('rect')
-        .style('opacity', 0)
-        .attr('class', 'line-chart hover-box')
-        .attr('width', barWidth)
-        .attr('height', function (d) {return chartHeight - y(d[yColumnName]) - margin.top - margin.bottom;})
-        .attr('x', function (d, i) {return x(new Date(d[xColumnName]));})
-        .attr('y', function (d, i) {return y(d[yColumnName]);})
-
-        .on('mouseover', function (d, i) {
-
-            var xtranslate = x(new Date(d[xColumnName]));
-            var chartId    = getChartId(chart);
-
-            // hover - круг/точка
-            var currentDot = '#chart'+chartId+' #dot-' + i;
-            d3.select(currentDot)
-                .style('opacity', 1)
-                .style('stroke', param.series[chartIndexSelected]['color']); // цвет границы кружка = цвету графика
-
-            var tooltipWidth = parseInt(tooltip.style('width'));
-            var tooltipHeight = parseInt(tooltip.style('height'));
-
-            tooltip
-                .style('opacity', 1)
-                .style('left', parseInt(d3.select(currentDot).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
-                .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
-                .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
-
-                .html("<br>"+(d[yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
-                .style('border-color', "#bbbbbb");
-         
-            // hover - линии
-            var currentLine = '#chart'+chartId+' #line-' + i;
-            d3.select(currentLine)
-                .style('opacity', 1)
-                .style('fill', param.series[chartIndexSelected]['color'])
-                .style('stroke', param.series[chartIndexSelected]['color']); // цвет линии = цвету графика
-
-            // hover - дата - пока не отображается (нет данных на графике ?)
-            d3.selectAll('g[transform = "translate(' + xtranslate + ',0)"]')
-                .select('text')
-                .transition() // задержка для случаев малого количества столбцов (мало данных по оси Х)
-                .duration(200)
-                .style('opacity', 1);
-            //.html (d[xColumnName]);
-        })
-
-        .on('mouseout', function (d, i) {
-
-            var xtranslate = x(new Date(d[xColumnName]));
-            var chartId    = getChartId(chart);
-
-            tooltip.style('opacity', 0);
-
-            // hover line
-            var currentLine = '#chart'+chartId+' #line-' + i;
-            d3.select(currentLine)
-                .transition()
-                .duration(200)
-                .style('opacity', 0);
-
-            // hover точки - делать невидимыми точки нужно только если плотность данных высокая
-            /*var currentDot = '#dot-' + i;
-             d3.select(currentDot)
-             .transition()
-             .duration(200)
-             .style('fill', '#bbbbbb') 
-             .style('opacity', 1);*/
-
-            // hover date
-            d3.selectAll('g[transform = "translate(' + xtranslate + ',0)"]')
-                .select('text[style = "text-anchor: middle; opacity: 1;"]')
-                .transition()
-                .duration(200)
-                .style('opacity', '0');
-        });
+    .data(data)
+    .enter()
+    .append('rect')
+    .style('opacity', 0)
+    .attr('class', 'line-chart hover-box')
+    .attr('width', barWidth)
+    .attr('height', function (d) {return chartHeight - y(d[yColumnName]) - margin.top - margin.bottom;})
+    .attr('x', function (d, i) {return x(new Date(d[xColumnName]));})
+    .attr('y', function (d, i) {return y(d[yColumnName]);});
 
 
-    ////////////////////////////////////////////////////////////////
-    // прорисовка графика
+    // прорисовка графов графика
     for (var j = 0, len1 = param.series.length; j < len1; j += 1) {
+
         // init line for axis
         var line = d3.line()
-            .x(function(data) { return xScale(data[param.xColumn]); })
-            .y(function(data) { return (param.series[j].yAxis == "left") ? yScaleLeft(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
+            .x(function(data) { return x(data[param.xColumn]); })
+            .y(function(data) { return (param.series[j].yAxis == "left") ? y(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
+
 
         // draw line
         g.append("path").datum(data)
@@ -367,9 +304,98 @@ function d3Chart (param, data, chartIndexSelected){
             .attr("class", "line-graph")
             .style("fill", "none")
             .style("stroke", param.series[j].color)
-            .style("stroke-width", "1px");
+            .style("stroke-width", "2px");
     };
 
+    // hover dot
+    chart.selectAll('circle')
+        .data(data)
+        .enter()
+        .append('circle')
+        .attr('id', function (d, i) {return 'dot-' + i;})
+        .attr('cx', function (d, i) {
+            return x(new Date(d[xColumnName]));})
+
+        .attr('cy', function (d, i) {
+            return y(d[yColumnName]);})
+
+        .attr('r', 6)
+        .style('fill', '#bbbbbb') // делать невидимыми точки нужно только если плотность данных высокая
+        .style('opacity', 1);
+
+
+
+    chart.selectAll('rect.hover-box')
+
+    .on('mouseover', function (d, i) {
+
+        var xtranslate = x(new Date(d[xColumnName]));
+        var chartId    = getChartId(chart);
+
+        // hover - круг/точка
+        var currentDot = '#chart'+chartId+' #dot-' + i;
+        d3.select(currentDot)
+            .style('opacity', 1)
+            .style('stroke', param.series[chartIndexSelected]['color']); // цвет границы кружка = цвету графика
+
+        var tooltipWidth = parseInt(tooltip.style('width'));
+        var tooltipHeight = parseInt(tooltip.style('height'));
+
+        tooltip
+            .style('opacity', 1)
+            .style('left', parseInt(d3.select(currentDot).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
+            .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
+            .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
+
+            .html("<br>"+(d[yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
+            .style('border-color', "#bbbbbb");
+     
+        // hover - линии
+        var currentLine = '#chart'+chartId+' #line-' + i;
+        d3.select(currentLine)
+            .style('opacity', 1)
+            .style('fill', param.series[chartIndexSelected]['color'])
+            .style('stroke', param.series[chartIndexSelected]['color']); // цвет линии = цвету графика
+
+        // hover - дата - пока не отображается (нет данных на графике ?)
+        d3.selectAll('g[transform = "translate(' + xtranslate + ',0)"]')
+            .select('text')
+            .transition() // задержка для случаев малого количества столбцов (мало данных по оси Х)
+            .duration(200)
+            .style('opacity', 1);
+        //.html (d[xColumnName]);
+    })
+
+    .on('mouseout', function (d, i) {
+
+        var xtranslate = x(new Date(d[xColumnName]));
+        var chartId    = getChartId(chart);
+
+        tooltip.style('opacity', 0);
+
+        // hover line
+        var currentLine = '#chart'+chartId+' #line-' + i;
+        d3.select(currentLine)
+            .transition()
+            .duration(200)
+            .style('opacity', 0);
+
+        // hover точки - делать невидимыми точки нужно только если плотность данных высокая
+        /*var currentDot = '#dot-' + i;
+         d3.select(currentDot)
+         .transition()
+         .duration(200)
+         .style('fill', '#bbbbbb') 
+         .style('opacity', 1);*/
+
+        // hover date
+        d3.selectAll('g[transform = "translate(' + xtranslate + ',0)"]')
+            .select('text[style = "text-anchor: middle; opacity: 1;"]')
+            .transition()
+            .duration(200)
+            .style('opacity', '0');
+    });
+    
 
     svg.selectAll('.line-graph').on('mousemove', function (d, i, c) {
 
