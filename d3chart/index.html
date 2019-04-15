@@ -51,14 +51,26 @@
             xAxisName: " ",
             yLeftAxisName: "Количество",  // надпись на оси Y
             series: [
-                {
-                    // dashRange: 
+                {                     
+                    hasDashing: true,
+                    dashParams: {
+                        type: 'area',
+                        color: '#b0c4de',
+                        switchOnHover: true
+                        // range: [new Date("Nov 1 2018"), new Date("Nov 15 2018")]
+                    },
                     yColumn: "urlsCount", /// !! имя столбца в массиве данных (для линии1 по оси Y)
                     title: "Url-адресов", // заголовок для легенды
                     color: "#ff6600",     // цвет линии1
                     yAxis: "left",        // положение оси Y
                     titleShort: "Url"},   // текст, выводимый при ховере вместе с текущим количеством
-                {
+                { 
+                    hasDashing: true,
+                    dashParams: {
+                        type: 'hatching',
+                        color: 'orange',
+                        switchOnHover: true
+                    },
                     yColumn: "keysCount",
                     title: "Ключевых фраз",
                     color: "#0080ff",

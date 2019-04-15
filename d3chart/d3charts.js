@@ -3,8 +3,6 @@
 //////////////////////////////////////////////////////////
 function d3Chart (param, data, chartIndexSelected){
 
-    console.log(param.xColumnDate);
-
 
     // проверка parentSelector
     var selectedObj = null;
@@ -117,6 +115,21 @@ function d3Chart (param, data, chartIndexSelected){
         .attr("width", param.width)
         .attr("height", param.height)
         .attr("id", param.parentSelector.substr(1)+"_d3_chart");
+
+    svg.append('defs')
+        .append('pattern')
+            .attr("id", 'hashPattern')    
+            .attr("width", '4px')    
+            .attr("height", '8px')    
+            .attr("patternUnits", 'userSpaceOnUse')    
+            .attr("patternTransform", 'rotate(90)')    
+        .append("rect")
+            .attr("width", '1px')    
+            .attr("height", '8px') 
+            .attr("transform", 'translate(0,0)') 
+            .attr("fill", 'orange');
+        
+
 
     // outer border
     svg.append("rect")
@@ -243,20 +256,60 @@ function d3Chart (param, data, chartIndexSelected){
     ////////////////////////////////////////////////////////////////
     // прорисовка штриховок графика
     for (var j = 0, len1 = param.series.length; j < len1; j += 1) {
+    if(param.series[j].hasDashing){
+        var dashParams = param.series[j].dashParams;
+        if( j !== chartIndexSelected && dashParams.switchOnHover){
+            continue;
+        }
 
+        // data.push({range: dashParams.range});
+        // data.push({range: dashParams.range});
+        // console.log(data);
+
+        var leftRangeDash = x(new Date("Nov 1 2018"));
+        var rightRangeDash = x(new Date("Nov 15 2018")); 
+        var rangeDash = [leftRangeDash, rightRangeDash];
+        var areaCallCount = 0; 
         // define the area
         var area = d3.area()
-            .x(function(data) { return x(data[param.xColumn]); })
+            .x(function(data) {
+                // if(areaCallCount > 1){
+                //     return;
+                // }
+                // areaCallCount++;
+                // return x(rangeDash[areaCallCount]);
+                return x(data[param.xColumn]); 
+            })
             .y0(height)
             .y1(function(data) { return (param.series[j].yAxis == "left") ? y(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
       
+        var dashFill = dashParams.color;
+        if(dashParams.type === 'hatching'){
+            d3.select('#hashPattern rect').attr("fill", dashParams.color);
+            dashFill = 'url(#hashPattern)';
+        } else if(dashParams.type === 'area'){
+            dashFill = dashParams.color;
+        }
+
+        // var leftRangeDash = x(new Date("Nov 1 2018"));
+        // var rightRangeDash = x(new Date("Nov 15 2018")); 
+        // var rangeDash = rightRangeDash - leftRangeDash;
+
+
+        // svg.append("rect")
+        // .attr("x", leftRangeDash + margin.left)
+        // .attr("width", rangeDash)
+        // .attr("height", param.height - margin.bottom )
+
         // add the area
         g.append("path")
             .datum(data)
             .attr("class", "area")
             .attr("d", area)
-            .style("fill", 'lightsteelblue')
+            .style("fill", dashFill)
             .style("stroke-width", "0");
+            
+    }
     };
 
     // rects for hover reference
