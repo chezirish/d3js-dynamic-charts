@@ -7,8 +7,35 @@
     fill: white;
 }
 
+.tick text, .legend text {
+    white-space: pre;
+    fill: #767676;
+    font-family: 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana, sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    cursor: default;
+}
+
+.axis path, .axis line {
+    stroke: #d3d3d3;
+}
+
+.grid .domain {
+    stroke: none;
+}
+
+.line-chart-title {
+    white-space: pre;
+    font-size: 28px;
+    font-family: 'Segoe UI Light', 'Helvetica Neue Light', 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana, sans-serif;
+    font-weight: 200;
+    fill: #232323;
+    cursor: default;
+}
+
 
 .line-chart.tooltip {
+    box-shadow: 0 5px 13px -4px #000000c9;
     position: absolute;
     text-align: center;
     min-height: 45px;
@@ -22,6 +49,14 @@
     pointer-events: none;
     font-family: helvetica, arial, sans-serif;
 
+
+    color: rgb(35, 35, 35);
+    margin-bottom: 5px;
+    font-size: 16px;
+    font-weight: 500;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #c5c5c5;
+    font-family: "Segoe UI", "Helvetica Neue", "Trebuchet MS", Verdana, sans-serif;
 }
 
 .line-chart.tooltip:before {

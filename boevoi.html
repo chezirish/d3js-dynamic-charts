@@ -414,7 +414,7 @@ function d3Chart (param, data, chartIndexSelected){
         // init line for axis
         var line = d3.line()
             .x(function(data) { return xScale(data[param.xColumn]); })
-            .y(function(data) { return (param.series[j].yAxis == "left") ? yScaleLeft(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
+            .y(function(data) {console.log(data[param.series[j].yColumn]); return (param.series[j].yAxis == "left") ? yScaleLeft(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
 
         // draw line
         g.append("path").datum(data)
@@ -623,9 +623,7 @@ function ParseData(dateColumn,dateFormat,usedNumColumns,data){
     });
 };
 
-
             ParseData('0','%Y-%m-%d',['1','2','3'],data2);
-            
             var param2 = {
                 parentSelector: '#chart2',
                 width:  600,

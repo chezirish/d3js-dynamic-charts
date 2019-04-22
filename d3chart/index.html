@@ -22,7 +22,7 @@
 
     <link href='style.css' rel='stylesheet'>
 
-    <script type="text/javascript" src="http://d3js.org/d3.v4.min.js"></script>
+    <script type="text/javascript" src="http://d3js.org/d3.v4.js"></script>
     <script type="text/javascript" src="d3charts.js"></script>
 </head>
 
@@ -33,53 +33,104 @@
     <TR><TD align="center"><div id="chart1"></div></TD></TR>
 </TABLE>
 
+
+
 <script>
+
+var data2 = [
+    ['2019-04-01',[50,41,27],[44,55,66]],['2019-03-15',[51,43,27], [100,110,120]],['2019-03-01',[40,31,17],[40,50,60]]
+]
+// var data2 = [['2019-04-01',50,41,27],['2019-03-15',51,43,27],['2019-03-01',48,42,29],['2019-02-15',47,38,30],['2019-02-01',50,43,33],['2019-01-15',50,42,27],['2019-01-01',51,41,31],['2018-12-15',49,41,30],['2018-12-01',50,41,26],['2018-11-15',50,44,32],['2018-11-01',49,42,35],['2018-10-15',48,40,33]];
+
     d3.tsv("real_first.tsv", function(error, data) {
         if (error) throw error;
 
         // перевод данных в числовой формат и дату для корректного построения
-        ParseData("date","%d.%m.%Y",["urlsCount","keysCount"],data);
+        // ParseData("date","%d.%m.%Y",["urlsCount","keysCount"],data);
 
+        // ParseData('0','%Y-%m-%d',['1-line','2-line','3-line'], ['1-bar','2-bar','3-bar'], data2);
+        ParseData('0','%Y-%m-%d',data2);
+
+        // console.log(data2);
         var param = {
             parentSelector: "#chart1", // выбор объекта, к которому прикрепить svg
             width:  600,
             height: 400,
             margin: {top: 50, right: 40, bottom: 65, left: 50},
             title: "Количество Url и Ключевых",
-            xColumn: "date", // !! имя столбца в массиве данных (по оси X)
+            xColumn: "0", // !! имя столбца в массиве данных (по оси X)
             xColumnDate: true,
             xAxisName: " ",
             yLeftAxisName: "Количество",  // надпись на оси Y
-            series: [
+            horizontalGrid: true,
+            verticalGrid: true,
+            bars: 
+                { 
+                barsType: 'inner',
+                barsItems: 
+                    [
+                        {
+                            yColumn: "0",
+                            color: "red",
+                            width: 10
+                        },
+                        {
+                            yColumn: "1",
+                            color: "pink",
+                            width: 10
+                        },
+                        {
+                            yColumn: "2",
+                            color: "yellow",
+                            width: 10
+                        }
+                    ]    
+                },
+            lines: [
                 {                     
-                    hasDashing: true,
+                    hasDashing: false,
                     dashParams: {
                         type: 'area',
                         color: '#b0c4de',
                         switchOnHover: true
                         // range: [new Date("Nov 1 2018"), new Date("Nov 15 2018")]
                     },
-                    yColumn: "urlsCount", /// !! имя столбца в массиве данных (для линии1 по оси Y)
+                    yColumn: '0',
                     title: "Url-адресов", // заголовок для легенды
                     color: "#ff6600",     // цвет линии1
                     yAxis: "left",        // положение оси Y
-                    titleShort: "Url"},   // текст, выводимый при ховере вместе с текущим количеством
+                    titleShort: "Url"
+                },   // текст, выводимый при ховере вместе с текущим количеством
                 { 
-                    hasDashing: true,
+                    hasDashing: false,
                     dashParams: {
                         type: 'hatching',
                         color: 'orange',
                         switchOnHover: true
                     },
-                    yColumn: "keysCount",
+                    yColumn: '1',
                     title: "Ключевых фраз",
                     color: "#0080ff",
                     yAxis: "left",
-                    titleShort: "Ключевых"}
+                    titleShort: "Ключевых"
+                },
+                { 
+                    hasDashing: false,
+                    dashParams: {
+                        type: 'hatching',
+                        color: 'orange',
+                        switchOnHover: true
+                    },
+                    yColumn: '2',
+                    title: "Ключевых фраз",
+                    color: "#f080dd",
+                    yAxis: "left",
+                    titleShort: "Ключевых"
+                }
             ]
         };
 
-        d3Chart(param, data, 0);
+        d3Chart(param, data2, 0);
     });
 </script>
 

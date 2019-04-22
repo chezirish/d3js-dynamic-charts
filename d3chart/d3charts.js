@@ -3,6 +3,18 @@
 //////////////////////////////////////////////////////////
 function d3Chart (param, data, chartIndexSelected){
 
+    // gridlines in x axis function
+    function make_x_gridlines() {		
+        return d3.axisBottom(x)
+            .ticks(5)
+    }
+
+    // gridlines in y axis function
+    function make_y_gridlines() {		
+        return d3.axisLeft(y)
+            .ticks(5)
+    }
+
 
     // проверка parentSelector
     var selectedObj = null;
@@ -44,16 +56,36 @@ function d3Chart (param, data, chartIndexSelected){
         }),
         yLeftMax=0, yRightMax=0;
 
-    for (var j = 0, len1 = param.series.length; j < len1; j += 1) {
-        tmpVal = d3.max(data, function(d) { return d[param.series[j].yColumn]; });
-        if (param.series[j].yAxis == "left"){
+    if(param.lines){
+        for (var j = 0, len1 = param.lines.length; j < len1; j += 1) {
+            tmpVal = d3.max(data, function(d) { 
+                var curDataVal = d[1][param.lines[j].yColumn];
+                if(curDataVal){
+                    return curDataVal;
+                }
+            });
+            if (param.lines[j].yAxis == "left"){
+                if (tmpVal>yLeftMax) {yLeftMax = tmpVal};
+            };
+            if (param.lines[j].yAxis == "right"){
+                if (tmpVal>yRightMax) {yRightMax = tmpVal};
+            };
+        };
+    } else if(param.bars.barsItems){
+        for (var j = 0, len1 = param.bars.barsItems.length; j < len1; j += 1) {
+            tmpVal = d3.max(data, function(d) { 
+                var curDataVal = d[2][param.bars.barsItems[j].yColumn];
+                if(curDataVal){
+                    return curDataVal;
+                }
+            });
             if (tmpVal>yLeftMax) {yLeftMax = tmpVal};
         };
-        if (param.series[j].yAxis == "right"){
-            if (tmpVal>yRightMax) {yRightMax = tmpVal};
-        };
-    };
+    }
 
+
+
+    
     // если дата одна, то смещаем ее по центру оси X
     var dateMinOffset = new Date(xMin);
     dateMinOffset.setDate( dateMinOffset.getDate() - 1  );
@@ -74,7 +106,7 @@ function d3Chart (param, data, chartIndexSelected){
     if (param.xColumnDate) {
         var xAxis = d3.axisBottom(x)
             .ticks(5)
-            .tickFormat(d3.timeFormat("%m.%Y"))
+            .tickFormat(d3.timeFormat("%d.%m.%Y"))
             .tickSize(10);
         //calculate count month in year on axis
         var xqViewMonth=Math.round(((xMax-xMin)/1000/60/60/24/30)/(width/23));
@@ -105,9 +137,12 @@ function d3Chart (param, data, chartIndexSelected){
     //     .attr("id", param.parentSelector.substr(1)+"-wrapper");
 
 
+
     d3.select(param.parentSelector)
         .style('width', param.width + 'px')
-        .style('position', 'relative');
+        .style('position', 'relative')
+
+
 
 
     // create svg for chart drawing
@@ -115,6 +150,33 @@ function d3Chart (param, data, chartIndexSelected){
         .attr("width", param.width)
         .attr("height", param.height)
         .attr("id", param.parentSelector.substr(1)+"_d3_chart");
+
+
+        if(param.verticalGrid){    
+            // add the X gridlines
+            svg.append("g")			
+            .attr("class", "grid")
+            .attr("transform", "translate(" + margin.left +  "," + margin.top + ")")
+            .call(make_x_gridlines()
+                .tickSize(height)
+                .tickFormat("")
+            )
+        }
+
+        if(param.horizontalGrid){            
+            // add the Y gridlines
+            svg.append("g")			
+            .attr("class", "grid")
+            .attr("transform", "translate(" + margin.left +  "," + margin.top + ")")
+            .call(make_y_gridlines()
+                .tickSize(-width)
+                .tickFormat("")
+            )
+        }
+
+  d3.selectAll(".grid .tick line")
+  .style("stroke", "#d3d3d3")
+
 
     svg.append('defs')
         .append('pattern')
@@ -153,7 +215,7 @@ function d3Chart (param, data, chartIndexSelected){
         .attr("y", -20)
         //.attr("transform","translate(0,"+(param.height-30)+")") // это заголовок легенды
         .attr("text-anchor", "middle")
-        .style("font-size", "18px")
+        .attr("class", "line-chart-title")
         .text(param.title);
 
     g.append("text")
@@ -184,7 +246,7 @@ function d3Chart (param, data, chartIndexSelected){
 
 
 
-    // add legend for series
+    // add legend for lines
     var legend = svg.append("g")
         .attr("class", "legend")
         .attr("height", 40)
@@ -192,7 +254,7 @@ function d3Chart (param, data, chartIndexSelected){
         .attr("transform","translate("+(margin.left)+","+(param.height)+")"); // это легенда цветовых линий, расположение по высоте зависит от заданного в параметрах
 
     legend.selectAll('rect')
-        .data(param.series)
+        .data(param.lines)
         .enter()
         .append("rect")
         .attr("y", 0 - (margin.top / 2))
@@ -205,7 +267,7 @@ function d3Chart (param, data, chartIndexSelected){
     var ySelectedIndex = chartIndexSelected;
 
     legend.selectAll('text')
-        .data(param.series)
+        .data(param.lines)
         .enter()
         .append("text")
         .attr('id', function (d, i) {return 'legend-text-' + i;}) // установка id, чтобы ниже показать подчеркивание
@@ -240,8 +302,8 @@ function d3Chart (param, data, chartIndexSelected){
 
     ////////////////////////
     var xColumnName = param.xColumn;                // имя колонки в массиве данных (по оси Х)
-    var yColumnName = param.series[ySelectedIndex]['yColumn'];   // по оси Y
-    var yValueName  = param.series[ySelectedIndex]['titleShort'];
+    var yColumnName = param.lines[ySelectedIndex]['yColumn'];   // по оси Y
+    var yValueName  = param.lines[ySelectedIndex]['titleShort'];
 
     // получает индекс текущего графика, где произошло наведение
     function getChartId(chart) {
@@ -255,9 +317,9 @@ function d3Chart (param, data, chartIndexSelected){
     
     ////////////////////////////////////////////////////////////////
     // прорисовка штриховок графика
-    for (var j = 0, len1 = param.series.length; j < len1; j += 1) {
-    if(param.series[j].hasDashing){
-        var dashParams = param.series[j].dashParams;
+    for (var j = 0, len1 = param.lines.length; j < len1; j += 1) {
+    if(param.lines[j].hasDashing){
+        var dashParams = param.lines[j].dashParams;
         if( j !== chartIndexSelected && dashParams.switchOnHover){
             continue;
         }
@@ -270,6 +332,8 @@ function d3Chart (param, data, chartIndexSelected){
         var rightRangeDash = x(new Date("Nov 15 2018")); 
         var rangeDash = [leftRangeDash, rightRangeDash];
         var areaCallCount = 0; 
+
+        var curLineExist = true;
         // define the area
         var area = d3.area()
             .x(function(data) {
@@ -281,7 +345,14 @@ function d3Chart (param, data, chartIndexSelected){
                 return x(data[param.xColumn]); 
             })
             .y0(height)
-            .y1(function(data) { return (param.series[j].yAxis == "left") ? y(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
+            .y1(function(data) { 
+                var curLineVal = data[1][param.lines[j].yColumn];
+                if(curLineVal){
+                    return (param.lines[j].yAxis == "left") ? y(curLineVal) : yScaleRight(curLineVal); 
+                } else {
+                    curLineExist = false;
+                }
+            });
       
         var dashFill = dashParams.color;
         if(dashParams.type === 'hatching'){
@@ -291,23 +362,17 @@ function d3Chart (param, data, chartIndexSelected){
             dashFill = dashParams.color;
         }
 
-        // var leftRangeDash = x(new Date("Nov 1 2018"));
-        // var rightRangeDash = x(new Date("Nov 15 2018")); 
-        // var rangeDash = rightRangeDash - leftRangeDash;
 
-
-        // svg.append("rect")
-        // .attr("x", leftRangeDash + margin.left)
-        // .attr("width", rangeDash)
-        // .attr("height", param.height - margin.bottom )
-
-        // add the area
-        g.append("path")
+        if(curLineExist){
+            // add the area
+            g.append("path")
             .datum(data)
             .attr("class", "area")
             .attr("d", area)
             .style("fill", dashFill)
             .style("stroke-width", "0");
+        
+        }
             
     }
     };
@@ -321,12 +386,72 @@ function d3Chart (param, data, chartIndexSelected){
         .attr('width', 1)
         .attr('class', 'line-chart hover-line')
         .attr('id', function (d, i) {return 'line-' + i;})
-        .attr('height', function (d) {return chartHeight - y(d[yColumnName]) - margin.top - margin.bottom;})
+        .attr('height', function (d) { 
+            var curLineVal = d[1][yColumnName];
+            if(curLineVal){
+                return chartHeight - y(curLineVal) - margin.top - margin.bottom;
+            }
+        })
         .attr('x', function (d, i) { 
             return x(new Date(d[xColumnName])) - 2 / 2;})
 
         .attr('y', function (d, i) {
-            return y(d[yColumnName]) + 4;}); // add height of dot to prevent overlap
+            var curLineVal = d[1][yColumnName];
+            if(curLineVal){
+                return y(d[1][yColumnName]) + 4;  // add height of dot to prevent overlap
+            }
+        });
+
+    // прорисовка bars графика
+    if(param.bars){    
+        // for(var bar = 0; bar < param.bars.length; bar++){
+        //     var currentBar = param.bars[bar];
+        //     var leftPoint = x(currentBar.positionX);
+        //     // var rightRangeDash = x(new Date("Nov 15 2018")); 
+        //     // var rangeDash = rightRangeDash - leftPoint;
+        //     // y(data[param.lines[j].yColumn])
+            
+        //     // console.log(y(data["urlsCount"]));
+        //     svg.append("rect")
+        //     .attr("x", leftPoint + margin.left)
+        //     .attr("width", 20)
+        //     // .attr("height", param.height - margin.bottom )
+        //     .attr("height", function(data){ console.log(data)  } )
+        //     .style('fill', currentBar.color)
+        // }
+
+        var barGroups = chart.selectAll()
+            .data(data)
+            .enter()
+            .append('g')
+        
+        var barOpacity = 1; 
+        if(param.bars.barsType === "inner"){
+            barOpacity = 0.5;
+        }
+
+        barGroups
+            .append('rect')
+            .attr('class', 'bar')
+            .attr('x', function(g,i) { return x(g[param.xColumn]) })
+            .attr('y', function(g,i) { 
+                var curBarVal = g[2][param.bars.barsItems[i].yColumn];
+                if(curBarVal){
+                    return y(curBarVal)
+                }   
+            })
+            .attr('height', function(g,i) { 
+                var curBarVal = g[2][param.bars.barsItems[i].yColumn];
+                if(curBarVal){
+                    return height - y(curBarVal); 
+                }
+            })
+            .attr("width", function(g,i) { return param.bars.barsItems[i].width; })
+            // .attr("width", function(g) { console.log(g); return x(g.x1) - x(g.x0) -1 ; })
+            .style('fill', function(g,i) { return param.bars.barsItems[i].color })
+            .style('opacity', barOpacity)
+    }
+
 
 
     // прорисовка hover-box графика
@@ -337,27 +462,49 @@ function d3Chart (param, data, chartIndexSelected){
     .style('opacity', 0)
     .attr('class', 'line-chart hover-box')
     .attr('width', barWidth)
-    .attr('height', function (d) {return chartHeight - y(d[yColumnName]) - margin.top - margin.bottom;})
+    .attr('height', function (d) {
+        var curLineVal = d[1][yColumnName];
+        if(curLineVal){
+            return chartHeight - y(curLineVal) - margin.top - margin.bottom;
+        }
+    })
     .attr('x', function (d, i) {return x(new Date(d[xColumnName]));})
-    .attr('y', function (d, i) {return y(d[yColumnName]);});
+    .attr('y', function (d, i) {
+        var curLineVal = d[1][yColumnName]; 
+        if(curLineVal){
+            return y(curLineVal);
+        }
+    });
 
 
     // прорисовка графов графика
-    for (var j = 0, len1 = param.series.length; j < len1; j += 1) {
+    for (var j = 0, len1 = param.lines.length; j < len1; j += 1) {
+
+        var curLineExist = data[j][1][param.lines[j].yColumn]; 
+        if(!curLineExist){
+            // console.log(1);
+            continue;
+        }
+
+        // console.log(data[j][1][param.lines[j].yColumn]);
+
 
         // init line for axis
         var line = d3.line()
             .x(function(data) { return x(data[param.xColumn]); })
-            .y(function(data) { return (param.series[j].yAxis == "left") ? y(data[param.series[j].yColumn]) : yScaleRight(data[param.series[j].yColumn]); });
+            .y(function(data) { return (param.lines[j].yAxis == "left") ? y(data[1][param.lines[j].yColumn]) : yScaleRight(data[1][param.lines[j].yColumn]); });
+
 
 
         // draw line
         g.append("path").datum(data)
-            .attr("d", line)
-            .attr("class", "line-graph")
-            .style("fill", "none")
-            .style("stroke", param.series[j].color)
-            .style("stroke-width", "2px");
+        .attr("d", line)
+        .attr("class", "line-graph")
+        .style("fill", "none")
+        .style("stroke", param.lines[j].color)
+        .style("stroke-width", "2px");
+                
+        
     };
 
     // hover dot
@@ -370,7 +517,11 @@ function d3Chart (param, data, chartIndexSelected){
             return x(new Date(d[xColumnName]));})
 
         .attr('cy', function (d, i) {
-            return y(d[yColumnName]);})
+            var curLineVal = d[1][yColumnName];
+            if(curLineVal){
+                return y(curLineVal);
+            }
+        })
 
         .attr('r', 6)
         .style('fill', '#bbbbbb') // делать невидимыми точки нужно только если плотность данных высокая
@@ -389,7 +540,10 @@ function d3Chart (param, data, chartIndexSelected){
         var currentDot = '#chart'+chartId+' #dot-' + i;
         d3.select(currentDot)
             .style('opacity', 1)
-            .style('stroke', param.series[chartIndexSelected]['color']); // цвет границы кружка = цвету графика
+            .style('stroke', param.lines[chartIndexSelected]['color']) // цвет границы кружка = цвету графика
+            .style('stroke-width', '2px')
+            .style('fill', '#ffffff')
+            .style('r', '7')
 
         var tooltipWidth = parseInt(tooltip.style('width'));
         var tooltipHeight = parseInt(tooltip.style('height'));
@@ -400,15 +554,15 @@ function d3Chart (param, data, chartIndexSelected){
             .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
             .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
 
-            .html("<br>"+(d[yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
+            .html("<br>"+(d[1][yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
             .style('border-color', "#bbbbbb");
      
         // hover - линии
         var currentLine = '#chart'+chartId+' #line-' + i;
         d3.select(currentLine)
             .style('opacity', 1)
-            .style('fill', param.series[chartIndexSelected]['color'])
-            .style('stroke', param.series[chartIndexSelected]['color']); // цвет линии = цвету графика
+            .style('fill', param.lines[chartIndexSelected]['color'])
+            .style('stroke', param.lines[chartIndexSelected]['color']); // цвет линии = цвету графика
 
         // hover - дата - пока не отображается (нет данных на графике ?)
         d3.selectAll('g[transform = "translate(' + xtranslate + ',0)"]')
@@ -433,6 +587,14 @@ function d3Chart (param, data, chartIndexSelected){
             .duration(200)
             .style('opacity', 0);
 
+        var currentDot = '#chart'+chartId+' #dot-' + i;
+        d3.select(currentDot)
+            .style('opacity', 1)
+            .style('stroke', 'none') 
+            .style('stroke-width', '1px')
+            .style('fill', '#bbbbbb')
+            .style('r', '6')
+
         // hover точки - делать невидимыми точки нужно только если плотность данных высокая
         /*var currentDot = '#dot-' + i;
          d3.select(currentDot)
@@ -452,7 +614,7 @@ function d3Chart (param, data, chartIndexSelected){
 
     svg.selectAll('.line-graph').on('mousemove', function (d, i, c) {
 
-        // if(param.series[ySelectedIndex]['yColumn'] === undefined){
+        // if(param.lines[ySelectedIndex]['yColumn'] === undefined){
         //     return;
         // }
 
@@ -465,13 +627,13 @@ function d3Chart (param, data, chartIndexSelected){
 };
 
 // parse date and numeric data
-function ParseData(dateColumn,dateFormat,usedNumColumns,data){
+function ParseData(dateColumn,dateFormat,data){
     var parse = d3.timeParse(dateFormat);
     data.forEach(function(d) {
         d[dateColumn] = parse(d[dateColumn]);
-        for (var i = 0, len = usedNumColumns.length; i < len; i += 1) {
-            d[usedNumColumns[i]] = +d[usedNumColumns[i]];
-        }
+        // for (var i = 0, len = usedNumColumns.length; i < len; i += 1) {
+        //     d[usedNumColumns[i]] = +d[usedNumColumns[i]];
+        // }
     });
 };
 
