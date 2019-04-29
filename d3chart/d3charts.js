@@ -3,6 +3,14 @@
 //////////////////////////////////////////////////////////
 function d3Chart (param, data, chartIndexSelected){
 
+    // Проверка наличия данных для линейных графиков
+    var lineValues = false;
+    for(var lineValue = 0; lineValue < data.length; lineValue++){
+        if(data[lineValue][1].length){
+            lineValues = true;
+        }
+    }
+
     // gridlines in x axis function
     function make_x_gridlines() {		
         return d3.axisBottom(x)
@@ -44,7 +52,17 @@ function d3Chart (param, data, chartIndexSelected){
         height = param.height - margin.top - margin.bottom;
 
     // set the scale for the transfer of real values
-    var x = (param.xColumnDate) ? d3.scaleTime().range([0, width]) : d3.scaleLinear().range([0, width]);
+    var x = (param.xColumnDate && false) ?  d3.scaleTime().range([0, width]) : d3.scaleLinear().range([0, width]);
+
+    x = d3.scaleBand()
+    .range([0, width])
+    // .padding(0)
+
+    // if(param.xColumnDate && false){
+    //     var x = d3.scaleTime().range([0, width]);
+    // } else {
+    //     var xLinear = d3.scaleLinear().range([0, width]);
+    // }
     var y = d3.scaleLinear().range([height, 0]);
     var yScaleRight = d3.scaleLinear().range([height, 0]);
 
@@ -56,7 +74,7 @@ function d3Chart (param, data, chartIndexSelected){
         }),
         yLeftMax=0, yRightMax=0;
 
-    if(param.lines){
+    if(param.lines && lineValues){
         for (var j = 0, len1 = param.lines.length; j < len1; j += 1) {
             tmpVal = d3.max(data, function(d) { 
                 var curDataVal = d[1][param.lines[j].yColumn];
@@ -71,7 +89,8 @@ function d3Chart (param, data, chartIndexSelected){
                 if (tmpVal>yRightMax) {yRightMax = tmpVal};
             };
         };
-    } else if(param.bars.barsItems){
+    }
+    if(param.bars){
         for (var j = 0, len1 = param.bars.barsItems.length; j < len1; j += 1) {
             tmpVal = d3.max(data, function(d) { 
                 var curDataVal = d[2][param.bars.barsItems[j].yColumn];
@@ -79,7 +98,22 @@ function d3Chart (param, data, chartIndexSelected){
                     return curDataVal;
                 }
             });
+            
+
+            
+            // console.log(data[j][2][param.bars.barsItems[j].yColumn]);
             if (tmpVal>yLeftMax) {yLeftMax = tmpVal};
+            // for (var dataVal = 0; dataVal < data.length; dataVal++) {
+            //     console.log(data[dataVal], "data[dataVal]")
+            //     console.log(data[dataVal][2], 'data[dataVal][2]')
+            //     console.log(data[dataVal][2][param.bars.barsItems[j]], 'data[dataVal][2][param.bars.barsItems[j]]')
+            //     console.log(param.bars.barsItems[j].yColumn, 'param.bars.barsItems[j].yColumn')
+            //     console.log(data[dataVal][2][param.bars.barsItems[j].yColumn], 'data[dataVal][2][param.bars.barsItems[j].ycolmn')
+            //     tmpVal = data[dataVal][2][param.bars.barsItems[j].yColumn];
+            //     if (tmpVal>yLeftMax) {yLeftMax = tmpVal};
+            // }
+
+        
         };
     }
 
@@ -92,12 +126,24 @@ function d3Chart (param, data, chartIndexSelected){
     var dateMaxOffset = new Date(xMax);
     dateMaxOffset.setDate( dateMaxOffset.getDate() + 1  );
 
-    if(data.length === 1 && param.xColumnDate){
-        x.domain([dateMinOffset,dateMaxOffset]);
-    } else {
-        x.domain([xMin,xMax]);
+    if(x){
+        if(data.length === 1 && param.xColumnDate){
+            x.domain([dateMinOffset,dateMaxOffset]);
+        } else {
+            x.domain([xMin,xMax]);
+        }
     }
-    
+
+
+    x.domain(data.map(function(d){
+        console.log(d[0]);
+        return d[0];
+        // for(var curDate = 0; curDate < d.length){
+            
+        // }
+        // d.date
+    }));
+
     y.domain([0,yLeftMax]);
     yScaleRight.domain([0,yRightMax]);
 
@@ -107,7 +153,8 @@ function d3Chart (param, data, chartIndexSelected){
         var xAxis = d3.axisBottom(x)
             .ticks(5)
             .tickFormat(d3.timeFormat("%d.%m.%Y"))
-            .tickSize(10);
+            .tickSize(10)
+            .tickSizeOuter(0);
         //calculate count month in year on axis
         var xqViewMonth=Math.round(((xMax-xMin)/1000/60/60/24/30)/(width/23));
         if (xqViewMonth<1) {xqViewMonth=1};
@@ -127,7 +174,8 @@ function d3Chart (param, data, chartIndexSelected){
         if (width<300) xAxis.ticks(5);
     };
 
-    var yAxisLeft = d3.axisLeft(y);
+    var yAxisLeft = d3.axisLeft(y)
+        .tickSizeOuter(0);
     //var yAxisRight = d3.axisRight(yScaleRight); // правая ось y отключена
 
     // var chartWrapper = selectedObj.append("div")
@@ -228,9 +276,10 @@ function d3Chart (param, data, chartIndexSelected){
     g.append("text")
         .attr("transform", "rotate(-90)")
         .attr("x", 0)
-        .attr("y", -28)
+        .attr("y", -23)
         .attr("dy", 40)
         .attr("text-anchor", "end")
+        .style("fill", "#767676")
         .text(param.yLeftAxisName);
 
     // add axis
@@ -253,26 +302,40 @@ function d3Chart (param, data, chartIndexSelected){
         .attr("width", 200)
         .attr("transform","translate("+(margin.left)+","+(param.height)+")"); // это легенда цветовых линий, расположение по высоте зависит от заданного в параметрах
 
+if(param.lines && lineValues){
     legend.selectAll('rect')
         .data(param.lines)
         .enter()
-        .append("rect")
-        .attr("y", 0 - (margin.top / 2))
-        .attr("x", function(d, i){ return i *  90;})
+        .append("line")
+        .attr('id', function (d, i) {return 'legend-line-' + i;}) // установка id, чтобы ниже показать подчеркивание
+        .attr("y2", 0 - (margin.top / 2))
+        .attr("y1", '-5')
+        .attr("x1", function(d, i){ return i *  90 + 10;})
+        .attr("x2", function(d, i){ return i *  90;})
         .attr("width", 10).attr("height", 10)
-        .style("fill", function(d) {return d.color; });
+        .style("stroke", function(d) {return d.color; });
+}
 
     ///////////////////////////////////
 
     var ySelectedIndex = chartIndexSelected;
-
+if(param.lines && lineValues){
     legend.selectAll('text')
         .data(param.lines)
         .enter()
         .append("text")
+        .attr('class', 'legend-text')
         .attr('id', function (d, i) {return 'legend-text-' + i;}) // установка id, чтобы ниже показать подчеркивание
         .attr("y", 0 - (margin.top / 2)+10)
-        .attr("x", function(d, i){ return i *  90 + 15;})
+        .attr("x", function(d, i){
+            //  var previousTextWidth = d3.select('#legend-text-' + (i-1) ).style('width');
+
+            // if(i > 0){
+            //     console.log(d3.select('#legend-text-' + (i-1))._groups[0][0].getBBox())
+            // }
+           
+            return i *  10 + 15;
+        })
         .text(function(d) { return d.title; })
         .style("cursor", "pointer") // покажем, что элементы легенды кликабельны
 
@@ -282,6 +345,35 @@ function d3Chart (param, data, chartIndexSelected){
                 d3Chart(param, data, i)
             }
         });
+}
+
+
+
+// Добавление отступов для текста легенд
+var legendTextArr = d3.selectAll('.legend-text')._groups[0]
+var LegendElmPrevWidth = 0;
+
+for(var LegendElmIndex = 0; LegendElmIndex < legendTextArr.length; LegendElmIndex++){
+    
+    if (LegendElmIndex < 1){
+        LegendElmPrevWidth += legendTextArr[LegendElmIndex].getBBox().width;
+        LegendElmPrevWidth += 35;
+        continue;
+    } else {
+        d3.select( legendTextArr[LegendElmIndex]).attr('x', LegendElmPrevWidth)
+        d3.select('#legend-line-' + LegendElmIndex)
+            .attr('x1', LegendElmPrevWidth - 5)
+            .attr('x2', (LegendElmPrevWidth - 10) - 5)
+        
+        LegendElmPrevWidth += legendTextArr[LegendElmIndex].getBBox().width;
+        LegendElmPrevWidth += 35;
+    }
+    
+}
+
+
+
+// d3.select('#legend-text-1').attr('x', 300)
 
     legend.select('#legend-text-'+chartIndexSelected)
     // подчеркивание на том объекте, который активен для ховера
@@ -302,8 +394,10 @@ function d3Chart (param, data, chartIndexSelected){
 
     ////////////////////////
     var xColumnName = param.xColumn;                // имя колонки в массиве данных (по оси Х)
-    var yColumnName = param.lines[ySelectedIndex]['yColumn'];   // по оси Y
-    var yValueName  = param.lines[ySelectedIndex]['titleShort'];
+    var yColumnName = param.lines ? param.lines[ySelectedIndex]['yColumn'] : undefined;   // по оси Y
+    var yColumnNameBar = param.bars ? param.bars.barsItems[ySelectedIndex]['yColumn'] : undefined;   // по оси Y
+    var yValueName  = param.lines ? param.lines[ySelectedIndex]['titleShort'] : undefined;
+    var yValueNameBar  = param.bars ? param.bars.barsItems[ySelectedIndex]['titleShort'] : undefined;
 
     // получает индекс текущего графика, где произошло наведение
     function getChartId(chart) {
@@ -317,91 +411,118 @@ function d3Chart (param, data, chartIndexSelected){
     
     ////////////////////////////////////////////////////////////////
     // прорисовка штриховок графика
-    for (var j = 0, len1 = param.lines.length; j < len1; j += 1) {
-    if(param.lines[j].hasDashing){
-        var dashParams = param.lines[j].dashParams;
-        if( j !== chartIndexSelected && dashParams.switchOnHover){
-            continue;
-        }
+    if(param.lines && lineValues){
+        for (var j = 0, len1 = param.lines.length; j < len1; j += 1) {
+        if(param.lines[j].hasDashing){
+            var dashParams = param.lines[j].dashParams;
+            if( j !== chartIndexSelected && dashParams.switchOnHover){
+                continue;
+            }
 
-        // data.push({range: dashParams.range});
-        // data.push({range: dashParams.range});
-        // console.log(data);
+            // data.push({range: dashParams.range});
+            // data.push({range: dashParams.range});
+            // console.log(data);
 
-        var leftRangeDash = x(new Date("Nov 1 2018"));
-        var rightRangeDash = x(new Date("Nov 15 2018")); 
-        var rangeDash = [leftRangeDash, rightRangeDash];
-        var areaCallCount = 0; 
+            var leftRangeDash = x(new Date("Nov 1 2018"));
+            var rightRangeDash = x(new Date("Nov 15 2018")); 
+            var rangeDash = [leftRangeDash, rightRangeDash];
+            var areaCallCount = 0; 
 
-        var curLineExist = true;
-        // define the area
-        var area = d3.area()
-            .x(function(data) {
-                // if(areaCallCount > 1){
-                //     return;
-                // }
-                // areaCallCount++;
-                // return x(rangeDash[areaCallCount]);
-                return x(data[param.xColumn]); 
-            })
-            .y0(height)
-            .y1(function(data) { 
-                var curLineVal = data[1][param.lines[j].yColumn];
-                if(curLineVal){
-                    return (param.lines[j].yAxis == "left") ? y(curLineVal) : yScaleRight(curLineVal); 
-                } else {
-                    curLineExist = false;
-                }
-            });
-      
-        var dashFill = dashParams.color;
-        if(dashParams.type === 'hatching'){
-            d3.select('#hashPattern rect').attr("fill", dashParams.color);
-            dashFill = 'url(#hashPattern)';
-        } else if(dashParams.type === 'area'){
-            dashFill = dashParams.color;
-        }
-
-
-        if(curLineExist){
-            // add the area
-            g.append("path")
-            .datum(data)
-            .attr("class", "area")
-            .attr("d", area)
-            .style("fill", dashFill)
-            .style("stroke-width", "0");
+            var curLineExist = true;
+            // define the area
+            var area = d3.area()
+                .x(function(data) {
+                    // if(areaCallCount > 1){
+                    //     return;
+                    // }
+                    // areaCallCount++;
+                    // return x(rangeDash[areaCallCount]);
+                    return x(data[param.xColumn]); 
+                })
+                .y0(height)
+                .y1(function(data) { 
+                    var curLineVal = data[1][param.lines[j].yColumn];
+                    if(curLineVal){
+                        return (param.lines[j].yAxis == "left") ? y(curLineVal) : yScaleRight(curLineVal); 
+                    } else {
+                        curLineExist = false;
+                    }
+                });
         
-        }
+            var dashFill = dashParams.color;
+            if(dashParams.type === 'hatching'){
+                d3.select('#hashPattern rect').attr("fill", dashParams.color);
+                dashFill = 'url(#hashPattern)';
+            } else if(dashParams.type === 'area'){
+                dashFill = dashParams.color;
+            }
+
+
+            if(curLineExist){
+                // add the area
+                g.append("path")
+                .datum(data)
+                .attr("class", "area")
+                .attr("d", area)
+                .style("fill", dashFill)
+                .style("stroke-width", "0");
             
+            }
+                
+        }
+        };
     }
-    };
 
     // rects for hover reference
-    chart.selectAll('rect.hover-line')
-        .data(data)
-        .enter()
-        .append('rect')
-        .style('opacity', 0)
-        .attr('width', 1)
-        .attr('class', 'line-chart hover-line')
-        .attr('id', function (d, i) {return 'line-' + i;})
-        .attr('height', function (d) { 
-            var curLineVal = d[1][yColumnName];
-            if(curLineVal){
-                return chartHeight - y(curLineVal) - margin.top - margin.bottom;
-            }
-        })
-        .attr('x', function (d, i) { 
-            return x(new Date(d[xColumnName])) - 2 / 2;})
+    // chart.selectAll('rect.hover-line')
+    //     .data(data)
+    //     .enter()
+    //     .append('rect')
+    //     .style('opacity', 0)
+    //     .attr('width', 1)
+    //     .attr('class', 'line-chart hover-line')
+    //     .attr('id', function (d, i) {return 'line-' + i;})
+    //     .attr('height', function (d) { 
+    //         var curLineVal = d[1][yColumnName];
+    //         if(curLineVal){
+    //             return chartHeight - y(curLineVal) - margin.top - margin.bottom;
+    //         }
+    //     })
+    //     .attr('x', function (d, i) { 
+    //         return x(new Date(d[xColumnName])) - 2 / 2;})
 
-        .attr('y', function (d, i) {
-            var curLineVal = d[1][yColumnName];
-            if(curLineVal){
-                return y(d[1][yColumnName]) + 4;  // add height of dot to prevent overlap
-            }
-        });
+    //     .attr('y', function (d, i) {
+    //         var curLineVal = d[1][yColumnName];
+    //         if(curLineVal){
+    //             return y(d[1][yColumnName]) + 4;  // add height of dot to prevent overlap
+    //         }
+    //     });
 
+
+    // // прорисовка hover-box графика
+    // chart.selectAll('rect.hover-box')
+    // .data(data)
+    // .enter()
+    // .append('rect')
+    // .style('opacity', 0)
+    // .attr('class', 'line-chart hover-box')
+    // .attr('width', barWidth)
+    // .attr('height', function (d) {
+    //     var curLineVal = d[1][yColumnName];
+    //     if(curLineVal){
+    //         return chartHeight - y(curLineVal) - margin.top - margin.bottom;
+    //     }
+    // })
+    // .attr('x', function (d, i) {return x(new Date(d[xColumnName]));})
+    // .attr('y', function (d, i) {
+    //     var curLineVal = d[1][yColumnName]; 
+    //     if(curLineVal){
+    //         return y(curLineVal);
+    //     }
+    // });
+
+
+    
     // прорисовка bars графика
     if(param.bars){    
         // for(var bar = 0; bar < param.bars.length; bar++){
@@ -448,36 +569,13 @@ function d3Chart (param, data, chartIndexSelected){
             })
             .attr("width", function(g,i) { return param.bars.barsItems[i].width; })
             // .attr("width", function(g) { console.log(g); return x(g.x1) - x(g.x0) -1 ; })
-            .style('fill', function(g,i) { return param.bars.barsItems[i].color })
+            .style('fill', function(g,i) { return param.bars.color })
             .style('opacity', barOpacity)
     }
 
 
-
-    // прорисовка hover-box графика
-    chart.selectAll('rect.hover-box')
-    .data(data)
-    .enter()
-    .append('rect')
-    .style('opacity', 0)
-    .attr('class', 'line-chart hover-box')
-    .attr('width', barWidth)
-    .attr('height', function (d) {
-        var curLineVal = d[1][yColumnName];
-        if(curLineVal){
-            return chartHeight - y(curLineVal) - margin.top - margin.bottom;
-        }
-    })
-    .attr('x', function (d, i) {return x(new Date(d[xColumnName]));})
-    .attr('y', function (d, i) {
-        var curLineVal = d[1][yColumnName]; 
-        if(curLineVal){
-            return y(curLineVal);
-        }
-    });
-
-
     // прорисовка графов графика
+if(param.lines && lineValues){
     for (var j = 0, len1 = param.lines.length; j < len1; j += 1) {
 
         var curLineExist = data[j][1][param.lines[j].yColumn]; 
@@ -506,8 +604,10 @@ function d3Chart (param, data, chartIndexSelected){
                 
         
     };
+}
 
     // hover dot
+    // if(param.lines){
     chart.selectAll('circle')
         .data(data)
         .enter()
@@ -522,21 +622,44 @@ function d3Chart (param, data, chartIndexSelected){
                 return y(curLineVal);
             }
         })
-
         .attr('r', 6)
         .style('fill', '#bbbbbb') // делать невидимыми точки нужно только если плотность данных высокая
         .style('opacity', 1);
+    // }
 
+    // chart.selectAll('.bar')
+    // .on('mouseover', function(d,i) {
+    //     if(!param.bars){
+    //         return false;
+    //     }
+        
+    //     var tooltipWidth = parseInt(tooltip.style('width'));
+    //     var tooltipHeight = parseInt(tooltip.style('height'));
+
+    //     // var currentBar = '#chart'+chartId+' #dot-' + i;
+
+    //     tooltip
+    //         .style('opacity', 1)
+    //         .style('left', parseInt(d3.select(this).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
+    //         .style('top',  parseInt(d3.select(this).attr('cy')) + tooltipHeight / 2 + 'px')
+    //         .style('width', initialTooltipWidth + yValueNameBar.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
+
+    //         .html("<br>"+(d[2][yColumnNameBar]) + ' ' + yValueNameBar) // вывод текста со значением на оси Y (br вместо форматирования)
+    //         .style('border-color', "#bbbbbb");
+    // })
 
 
     chart.selectAll('rect.hover-box')
 
     .on('mouseover', function (d, i) {
-
+        if(!param.lines){
+            return false;
+        }
         var xtranslate = x(new Date(d[xColumnName]));
         var chartId    = getChartId(chart);
 
         // hover - круг/точка
+        if(param.lines){
         var currentDot = '#chart'+chartId+' #dot-' + i;
         d3.select(currentDot)
             .style('opacity', 1)
@@ -544,20 +667,29 @@ function d3Chart (param, data, chartIndexSelected){
             .style('stroke-width', '2px')
             .style('fill', '#ffffff')
             .style('r', '7')
+        }
+
+
+        tooltip
+            .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
+            .html((d[1][yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
+            .style('border-color', "#bbbbbb");
+
 
         var tooltipWidth = parseInt(tooltip.style('width'));
         var tooltipHeight = parseInt(tooltip.style('height'));
 
-        tooltip
-            .style('opacity', 1)
+        tooltip  
             .style('left', parseInt(d3.select(currentDot).attr('cx')) + (tooltipWidth / 2) + 12 + 'px')
             .style('top',  parseInt(d3.select(currentDot).attr('cy')) + tooltipHeight / 2 + 'px')
-            .style('width', initialTooltipWidth + yValueName.length*5 + 'px') // ширина подсказки зависит от длины текста (param['titleShort)
-
-            .html("<br>"+(d[1][yColumnName]) + ' ' + yValueName) // вывод текста со значением на оси Y (br вместо форматирования)
-            .style('border-color', "#bbbbbb");
+            .style('display',  'flex')
+            .style('justify-content',  'center')
+            .style('align-items',  'center')
+            .style('opacity', 1);
+            
      
         // hover - линии
+        if(param.lines){
         var currentLine = '#chart'+chartId+' #line-' + i;
         d3.select(currentLine)
             .style('opacity', 1)
@@ -571,6 +703,7 @@ function d3Chart (param, data, chartIndexSelected){
             .duration(200)
             .style('opacity', 1);
         //.html (d[xColumnName]);
+        }
     })
 
     .on('mouseout', function (d, i) {

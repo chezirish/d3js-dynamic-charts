@@ -48,13 +48,11 @@
     border-width: 2px;
     pointer-events: none;
     font-family: helvetica, arial, sans-serif;
-
-
-    color: rgb(35, 35, 35);
+    color: #767676;
     margin-bottom: 5px;
     font-size: 16px;
     font-weight: 500;
-    padding-bottom: 5px;
+    padding: 0;
     border-bottom: 1px solid #c5c5c5;
     font-family: "Segoe UI", "Helvetica Neue", "Trebuchet MS", Verdana, sans-serif;
 }
